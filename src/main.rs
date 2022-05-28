@@ -15,7 +15,7 @@ for anyone iterested in testing for the comparison.
 */
 
 fn main() {
-    let t = 2. / (1. + 2f64.sqrt()).ln(); //The critical temperature of a 2D Ising model.
+    let t = 2. / f64::ln(1. + 2f64.sqrt()); //The critical temperature of a 2D Ising model.
 
     run(true, t);
 }
@@ -51,16 +51,12 @@ fn run(order: bool, t: f64) {
     When order is true the array is randomized between up (1) and down (-1)
     spin states. Otherwise the spins all point up.
     */
-    if order == true {
-        for x in &mut arr {
-            if *&rng.gen::<f64>() > 0.5 {
-                *x = 1i8
-            } else {
-                *x = -1i8
-            }
+    if order {
+        for i in 0..LEN {
+            arr[i] = if rng.gen_bool(0.5) { 1i8 } else { -1i8 }
         }
     } else {
-        arr = [1i8; LEN];
+        arr = [1i8; LEN]
     }
     // Show the image before the interations for comparison.
     plot(&arr, String::from("before.png").as_str()).unwrap();
@@ -72,10 +68,11 @@ fn run(order: bool, t: f64) {
     of possible outcomes and enables one to check the energy of the site as
     opposed to the whole lattice when determining whether or not to flip the spin.
     */
-    let mut probs = [0f64; 9];
+    let mut probs = [0u64; 9];
     let mut inc: f64 = -4.0;
     for prob in &mut probs {
-        *prob = (-2. * beta * inc).exp();
+        let ptemp = f64::exp(-2. * beta * inc);
+        *prob = (2f64.powi(64) * ptemp) as u64;
         inc += 1.;
     }
 
@@ -118,7 +115,7 @@ fn run(order: bool, t: f64) {
                 let site = &arr[i + j];
 
                 let en = J * site * (nn + ss + ww + ee);
-                let pcomp = &rng.gen::<f64>();
+                let pcomp = &rng.gen::<u64>();
 
                 let k = 4 + en;
                 if *pcomp < probs[k as usize] {

@@ -1,4 +1,4 @@
-using BenchmarkTools, GLMakie
+using BenchmarkTools#, GLMakie
 
 # quick and dirty julia implementation
 function ising!(lat::Matrix{Int8}, t::Float64, nsteps::Int)

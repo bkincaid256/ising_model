@@ -12,7 +12,7 @@ plotters = { version = "0.3.1"}
 
 [profile.release]
 debug = true
-lto = "thin"
+lto = "fat"
 
 [profile.bench]
 debug = true
