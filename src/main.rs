@@ -2,7 +2,6 @@ use plotters::prelude::*;
 use rand::prelude::*;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256Plus;
-use std::f64::consts::E;
 use std::time::Instant;
 
 /*
@@ -16,7 +15,7 @@ for anyone iterested in testing for the comparison.
 */
 
 fn main() {
-    let t = 2. / (1. + 2f64.sqrt()).log(E); //The critical temperature of a 2D Ising model.
+    let t = 2. / (1. + 2f64.sqrt()).ln(); //The critical temperature of a 2D Ising model.
 
     run(true, t);
 }
@@ -27,7 +26,7 @@ in principle, but I will use 1 for the classic ferromagnetic case.
 */
 const J: i8 = 1;
 const STEPS: usize = 1000;
-const SIDE: usize = 500; // Making a default for square arrays
+const SIDE: usize = 1000; // Making a default for square arrays
 const NPIXELS: u32 = 1000; // Used for giving the size of a side of the PNG.
 const NROWS: usize = SIDE;
 const NCOLUMNS: usize = SIDE;
@@ -64,7 +63,7 @@ fn run(order: bool, t: f64) {
         arr = [1i8; LEN];
     }
     // Show the image before the interations for comparison.
-    plot(&arr, String::from("before.png")).unwrap();
+    plot(&arr, String::from("before.png").as_str()).unwrap();
 
     let now = Instant::now();
     /*
@@ -97,23 +96,33 @@ fn run(order: bool, t: f64) {
     for _ in 0..STEPS {
         for i in 0..NROWS {
             for j in 0..NCOLUMNS {
-                let inorth = (i + 1) % NROWS;
-                let isouth = if i == 0 { NROWS - 1 } else { i - 1 };
+                // precalculate i's for the current iteration
+                let inorth = ((i + 1) % NROWS) * NROWS;
+                let isouth = if i == 0 {
+                    (NROWS - 1) * NROWS
+                } else {
+                    (i - 1) * NROWS
+                };
+                let i = i * NROWS; //shadow i with its current row value.
+
+                // assert! helps elide bounds checks
+                assert!(i + j < arr.len());
+
                 let jeast = (j + 1) % NCOLUMNS;
                 let jwest = if j == 0 { NCOLUMNS - 1 } else { j - 1 };
 
-                let nn = &arr[inorth as usize * NROWS + j];
-                let ss = &arr[isouth as usize * NROWS + j];
-                let ee = &arr[i * NROWS + (jeast as usize)];
-                let ww = &arr[i * NROWS + (jwest as usize)];
-                let site = &arr[i * NROWS + j];
+                let nn = &arr[inorth + j];
+                let ss = &arr[isouth + j];
+                let ee = &arr[i + jeast];
+                let ww = &arr[i + jwest];
+                let site = &arr[i + j];
 
                 let en = J * site * (nn + ss + ww + ee);
                 let pcomp = &rng.gen::<f64>();
 
                 let k = 4 + en;
                 if *pcomp < probs[k as usize] {
-                    arr[i * NROWS + j] = -1 * arr[i * NROWS + j];
+                    arr[i + j] = -1 * arr[i + j];
                 }
             }
         }
@@ -124,16 +133,14 @@ fn run(order: bool, t: f64) {
     println!("the whole program took {:#?} seconds to run.", elapsed);
 
     // Plot the final state the system is in.
-    plot(&arr, String::from("after.png")).unwrap();
+    plot(&arr, String::from("after.png").as_str()).unwrap();
 }
 
 /*
 Defining a basic plotting function for the array as a png. This maps the array to a 2D
 histogram where an up spin (1) is white, and a down spin (-1) is teal.
 */
-fn plot(&arr: &[i8; LEN], name: String) -> Result<(), Box<dyn std::error::Error>> {
-    let name = name.as_str();
-
+fn plot(&arr: &[i8; LEN], name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let root_drawing_area = BitMapBackend::new(name, (NPIXELS, NPIXELS)).into_drawing_area();
 
     let child_drawing_areas = root_drawing_area.split_evenly((NROWS, NCOLUMNS));

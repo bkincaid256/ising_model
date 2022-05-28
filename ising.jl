@@ -26,7 +26,7 @@ function plot_ising(lat::Matrix{Int8})
 end
 
 T = 2 / log(1 + sqrt(2))
-side = 500
+side = 1000
 steps = 1000
 array = rand(Int8[-1,1], side, side)
 
