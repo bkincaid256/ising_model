@@ -27,7 +27,7 @@ in principle, but I will use 1 for the classic ferromagnetic case.
 const J: i8 = 1;
 const STEPS: usize = 1000;
 const SIDE: usize = 1000; // Making a default for square arrays
-const NPIXELS: u32 = 1000; // Used for giving the size of a side of the PNG.
+const NPIXELS: u32 = SIDE as u32; // Used for giving the size of a side of the PNG.
 const NROWS: usize = SIDE;
 const NCOLUMNS: usize = SIDE;
 const LEN: usize = NROWS * NCOLUMNS;
@@ -68,6 +68,7 @@ fn run(order: bool, t: f64) {
     of possible outcomes and enables one to check the energy of the site as
     opposed to the whole lattice when determining whether or not to flip the spin.
     */
+    // We move it to u64 on suggestion as comparing u64s is faster than floats.
     let mut probs = [0u64; 9];
     let mut inc: f64 = -4.0;
     for prob in &mut probs {
@@ -106,8 +107,11 @@ fn run(order: bool, t: f64) {
                 assert!(i + j < arr.len());
 
                 let jeast = (j + 1) % NCOLUMNS;
-                let jwest = if j == 0 { NCOLUMNS - 1 } else { j - 1 };
-
+                let jwest = if j == 0 {
+                    (j + NCOLUMNS - 1) % NCOLUMNS
+                } else {
+                    j - 1
+                };
                 let nn = &arr[inorth + j];
                 let ss = &arr[isouth + j];
                 let ee = &arr[i + jeast];
@@ -118,9 +122,10 @@ fn run(order: bool, t: f64) {
                 let pcomp = &rng.gen::<u64>();
 
                 let k = 4 + en;
-                if *pcomp < probs[k as usize] {
-                    arr[i + j] = -1 * arr[i + j];
-                }
+                assert!((k as usize) < probs.len());
+                let flip = *pcomp < probs[k as usize];
+
+                arr[i + j] = if flip { -arr[i + j] } else { arr[i + j] };
             }
         }
     }

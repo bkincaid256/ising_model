@@ -1,11 +1,12 @@
-using BenchmarkTools#, GLMakie
+using BenchmarkTools, GLMakie
 
 # quick and dirty julia implementation
 function ising!(lat::Matrix{Int8}, t::Float64, nsteps::Int)
     β = 1 / t
     array = lat
     m, n = size(array)
-    prob = [(exp(-2 * β * k) for k in -4:4)...,]
+    prob = [exp(-2 * β * k) for k in -4:4]
+    println(prob)
     @inbounds for _ in 1:nsteps, i in 1:n
         @simd for j in 1:m
             site = array[j, i]
@@ -31,3 +32,4 @@ steps = 1000
 array = rand(Int8[-1,1], side, side)
 
 @elapsed ising!(array, T, steps) 
+plot_ising(array)
